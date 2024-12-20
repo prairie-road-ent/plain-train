@@ -1,0 +1,10 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "compileDebugProgram_TASK",
+            "type": "shell",
+            "command": "bash ./scripts/compileDebugProgram.sh",
+        }
+    ]
+}

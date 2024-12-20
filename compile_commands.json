@@ -1,0 +1,7 @@
+[
+    {
+        "directory": "/workspaces/plain-train",
+        "command": "clang -Wall -Wextra -Wpedantic -o ./out/mechanism_cc -lpng16 ./source/main.c /usr/local/lib/libtcc.a",
+        "file": "./source/main.c"
+    }
+]
