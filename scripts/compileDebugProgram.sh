@@ -1,0 +1,1 @@
+bash $PROJECT_DIRECTORY_PATH/scripts/__compileProgram.sh "infer run --" "-g -Wall -Wextra -Wpedantic"
