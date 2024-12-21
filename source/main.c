@@ -1,16 +1,30 @@
 #include "PngEncoding.h"
 #include "PngPixels.h"
+#include <fcntl.h>
+#include <libtcc.h>
+#include <malloc.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <malloc.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
 
-int main(void)
+int main(int argc, char* argv[])
 {
+  int renderImageScriptFileDescriptor = open(argv[1], O_RDONLY);
+  struct stat renderImageScriptFileStat;
+  fstat(renderImageScriptFileDescriptor, &renderImageScriptFileStat);
+  String renderImageScriptText = (String)mmap(NULL, renderImageScriptFileStat.st_size, PROT_READ, MAP_PRIVATE, renderImageScriptFileDescriptor, 0);
+  TCCState* tcc_state = tcc_new();
+  tcc_add_include_path(tcc_state, ".");
+  tcc_set_output_type(tcc_state, TCC_OUTPUT_MEMORY);
+  tcc_compile_string(tcc_state, renderImageScriptText);
+  tcc_add_file(tcc_state, "./PngEncoding.o");
+  tcc_add_file(tcc_state, "./PngPixels.o");
+  tcc_add_file(tcc_state, "./general.o");
+  tcc_relocate(tcc_state);
+  void (*renderImagePixels)(Rgb8bitPngPixels* pngPixels) = tcc_get_symbol(tcc_state, "renderImagePixels");
   U32 pixelsWidth = 129;
   U32 pixelsHeight = 129;
-  U8 backgroundColorRed = 255;
-  U8 backgroundColorGreen = 97;
-  U8 backgroundColorBlue = 0;
   U64 pixelsSize =
     sizeofRgb8bitPngPixels(pixelsWidth, pixelsHeight);
   U64 maxEncodingSize =
@@ -30,24 +44,7 @@ int main(void)
   initRgb8bitPngEncoding(
     pngEncoding,
     pngPixels);
-  Rgb8bitPixelChannels* currentPixelChannels_ptr;
-  for (U32 pixelRowIndex = 0; pixelRowIndex < pngPixels->height; pixelRowIndex++)
-  {
-    for (U32 pixelColumnIndex = 0; pixelColumnIndex < pngPixels->width; pixelColumnIndex++)
-    {
-      currentPixelChannels_ptr =
-        atPixelsDataPixelChannels(
-          pngPixels,
-          pixelColumnIndex,
-          pixelRowIndex);
-      currentPixelChannels_ptr->red =
-        backgroundColorRed;
-      currentPixelChannels_ptr->green =
-        backgroundColorGreen;
-      currentPixelChannels_ptr->blue =
-        backgroundColorBlue;
-    }
-  }
+  renderImagePixels(pngPixels);
   encodeRgb8bitPngPixels(
     pngEncoding,
     pngPixels);
