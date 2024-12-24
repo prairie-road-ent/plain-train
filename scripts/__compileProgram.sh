@@ -7,6 +7,7 @@ fi
 $__MAYBE_INFER_RUN_INVOCATION \
     clang $__CLANG_OPTIONS_ARGUMENTS \
         -o $OUTPUT_EXECUTABLE_PATH \
-        -lz -lm \
+        -Wl -rpath /usr/local/lib \
+        -lz -lm -ljansson \
         $(find $SOURCE_DIRECTORY_PATH -name "*.c") \
         /usr/local/lib/libtcc.a

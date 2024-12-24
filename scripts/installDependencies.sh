@@ -15,3 +15,10 @@ sudo curl --location --remote-name https://github.com/madler/zlib/releases/downl
     && sudo ./configure \
     && sudo make \
     && sudo make install
+sudo curl --location --remote-name https://github.com/akheron/jansson/releases/download/v2.14/jansson-2.14.tar.gz \
+    && tar --directory $DEPENDENCIES_DIRECTORY_PATH --extract --verbose --file ./jansson-2.14.tar.gz \
+    && rm ./jansson-2.14.tar.gz \
+    && cd $DEPENDENCIES_DIRECTORY_PATH/jansson-2.14 \
+    && sudo ./configure \
+    && sudo make \
+    && sudo make install
