@@ -2,11 +2,11 @@
 #include "../source/PngPixels.h"
 #include <libtcc.h>
 
-void renderImagePixels(Rgb8bitPngPixels* pngPixels)
+void imageRenderPixels(Rgb8bitPngPixels* pngPixels)
 {
   U8 backgroundColorRed = 255;
   U8 backgroundColorGreen = 97;
-  U8 backgroundColorBlue = 211;
+  U8 backgroundColorBlue = 0;
   Rgb8bitPixelChannels* currentPixelChannels_ptr;
   for (U32 pixelRowIndex = 0; pixelRowIndex < pngPixels->height; pixelRowIndex++)
   {
