@@ -38,18 +38,10 @@ int main(int argc, char* argv[])
   fstat(imageRenderPixelsFileDescriptor, &imageRenderPixelsFileStat);
   String imageRenderPixelsSourceFileText = (String)mmap(NULL, imageRenderPixelsFileStat.st_size, PROT_READ, MAP_PRIVATE, imageRenderPixelsFileDescriptor, 0);
   TCCState* tccState = tcc_new();
-  tcc_add_include_path(tccState, imageDirectoryRelativePath);
   tcc_set_output_type(tccState, TCC_OUTPUT_MEMORY);
+  tcc_add_include_path(tccState, imageDirectoryRelativePath);
   tcc_compile_string(tccState, imageRenderPixelsSourceFileText);
-  char pngEncodingObjectFilePath[imageDirectoryRelativePathLength + 1 + strlen("PngEncoding.o")];
-  sprintf(pngEncodingObjectFilePath, "%s%s%s", imageDirectoryRelativePath, "/", "PngEncoding.o");
-  tcc_add_file(tccState, pngEncodingObjectFilePath);
-  char pngPixelsObjectFilePath[imageDirectoryRelativePathLength + 1 + strlen("PngPixels.o")];
-  sprintf(pngPixelsObjectFilePath, "%s%s%s", imageDirectoryRelativePath, "/", "PngPixels.o");
-  tcc_add_file(tccState, pngPixelsObjectFilePath);
-  char generalObjectFilePath[imageDirectoryRelativePathLength + 1 + strlen("general.o")];
-  sprintf(generalObjectFilePath, "%s%s%s", imageDirectoryRelativePath, "/", "general.o");
-  tcc_add_file(tccState, generalObjectFilePath);
+  tcc_add_library(tccState, "plain-train");
   tcc_relocate(tccState);
   void (*imageRenderPixels)(Rgb8bitPngPixels* pngPixels) = tcc_get_symbol(tccState, "imageRenderPixels");
   U64 pixelsSize =
