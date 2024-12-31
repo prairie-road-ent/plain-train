@@ -1,10 +1,10 @@
 #include "PngEncoding.h"
 #include "PngPixels.h"
-#include <fcntl.h>
-#include <libtcc.h>
 #include "general.h"
+#include <fcntl.h>
 #include <jansson.h>
 #include <libgen.h>
+#include <libtcc.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/mman.h>
@@ -23,6 +23,7 @@ int main(int argc, char* argv[])
   U32 imagePixelWidth = json_number_value(json_object_get(imageConfigJson, "imagePixelWidth"));
   U32 imagePixelHeight = json_number_value(json_object_get(imageConfigJson, "imagePixelHeight"));
   String imageRenderPixelsRelativePath = json_string_value(json_object_get(imageConfigJson, "imageRenderPixelsRelativePath"));
+  json_t* imageRenderPixelsLinkedLibrariesArray = json_object_get(imageConfigJson, "imageRenderPixelsLinkedLibraries");
   String imageDirectoryRelativePath = dirname(strdup(relativeImageConfigPath));
   U32 imageDirectoryRelativePathLength = strlen(imageDirectoryRelativePath);
   String imageRenderPixelsRelativeTruncatedPath = removeRelativePathDotSlash(imageRenderPixelsRelativePath);
@@ -32,16 +33,22 @@ int main(int argc, char* argv[])
   U32 imageNameLength = strlen(imageName);
   char imageNameResolvedRelativePath[imageDirectoryRelativePathLength + 1 + imageNameLength + 4];
   sprintf(imageNameResolvedRelativePath, "%s%s%s%s", imageDirectoryRelativePath, "/", imageName, ".png");
-  json_decref(imageConfigJson);
   int imageRenderPixelsFileDescriptor = open(imageRenderPixelsResolvedRelativePath, O_RDONLY);
   struct stat imageRenderPixelsFileStat;
   fstat(imageRenderPixelsFileDescriptor, &imageRenderPixelsFileStat);
   String imageRenderPixelsSourceFileText = (String)mmap(NULL, imageRenderPixelsFileStat.st_size, PROT_READ, MAP_PRIVATE, imageRenderPixelsFileDescriptor, 0);
   TCCState* tccState = tcc_new();
   tcc_set_output_type(tccState, TCC_OUTPUT_MEMORY);
-  tcc_add_include_path(tccState, imageDirectoryRelativePath);
+  // tcc_add_include_path(tccState, imageDirectoryRelativePath);
   tcc_compile_string(tccState, imageRenderPixelsSourceFileText);
   tcc_add_library(tccState, "plain-train");
+  size_t currentLibraryIndex;
+  json_t* currentLibraryLabel;
+  json_array_foreach(imageRenderPixelsLinkedLibrariesArray, currentLibraryIndex, currentLibraryLabel) {
+    tcc_add_library(tccState, json_string_value(currentLibraryLabel));
+  }
+  json_decref(imageConfigJson);
+  
   tcc_relocate(tccState);
   void (*imageRenderPixels)(Rgb8bitPngPixels* pngPixels) = tcc_get_symbol(tccState, "imageRenderPixels");
   U64 pixelsSize =

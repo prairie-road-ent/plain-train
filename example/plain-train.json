@@ -2,5 +2,8 @@
     "imageName": "foo",
     "imagePixelWidth": 512,
     "imagePixelHeight": 512,
-    "imageRenderPixelsRelativePath": "./imageRenderPixels.c"
+    "imageRenderPixelsRelativePath": "./imageRenderPixels.c",
+    "imageRenderPixelsLinkedLibraries": [
+        "m"
+    ]
 }

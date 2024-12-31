@@ -1,7 +1,6 @@
-#include <stdint.h>
-
 #ifndef MECHANISM_CC_GENERAL_H
 #define MECHANISM_CC_GENERAL_H
+#include <stdint.h>
 
 typedef enum {
     __ValueAddressKind__CONSTANT = 0x02,
