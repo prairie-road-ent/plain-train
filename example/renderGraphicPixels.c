@@ -1,10 +1,7 @@
 #include <plain-train.h>
-#include <stdio.h>
-// #include <math.h>
 
-void imageRenderPixels(Rgb8bitPngPixels* pngPixels)
+void renderGraphic(Rgb8bitPngPixels* pngPixels)
 {
-  printf("%f\n", sin(0));
   U8 backgroundColorRed = 255;
   U8 backgroundColorGreen = 128;
   U8 backgroundColorBlue = 0;

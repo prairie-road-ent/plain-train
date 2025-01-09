@@ -1,8 +1,7 @@
-#include "PngPixels.h"
-#include "general.h"
-
 #ifndef PNG_ENCODING_H
 #define PNG_ENCODING_H
+#include "PngPixels.h"
+#include "general.h"
 
 typedef U64 PngSignature;
 #define pngSignature__Rgb8bitPngEncoding__VALUE_ADDRESS_KIND __ValueAddressKind__CONSTANT

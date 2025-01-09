@@ -1,7 +1,6 @@
-#include "general.h"
-
 #ifndef PNG_PIXELS_H
 #define PNG_PIXELS_H
+#include "general.h"
 
 typedef enum
 {

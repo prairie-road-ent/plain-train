@@ -29,6 +29,7 @@ typedef int64_t S64;
 typedef float IEEE32;
 typedef double IEEE64;
 
+typedef char StringBuffer;
 typedef char* String;
 typedef U8 Byte;
 typedef Byte* HeapAllocation;
@@ -38,10 +39,13 @@ typedef U8 Bool;
 #define ALLOCATION_INTERNAL_REQUIRED_BYTE_ALIGNMENT_BYTE_SIZE 8
 #define true__Bool__STATIC_VALUE 1
 #define false__Bool__STATIC_VALUE 0
+#define PATH_SEPARATOR '/'
 
 void printBytes(U8* startAddress, U64 byteCount);
 U32 swapEndianU32(U32 value);
 U64 swapEndianU64(U64 value);
 U32 fourByteStringToU32(String fourByteString);
+
+#define JOIN_STRINGS(stringAaa, stringBbb) stringAaa ## stringBbb
 
 #endif
