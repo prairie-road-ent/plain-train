@@ -125,4 +125,6 @@ void initRgb8bitPngEncoding(U8* pngEncoding, Rgb8bitPngPixels* pngPixels);
 void encodeRgb8bitPngPixels(U8* pngEncoding, Rgb8bitPngPixels* pngPixels);
 U64 getRgb8bitPngEncodingSize(U8* pngEncoding);
 
+void writePngFile(String pngFileAbsolutePath, U8* pngEncoding);
+
 #endif

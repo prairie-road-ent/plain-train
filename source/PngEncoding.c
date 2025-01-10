@@ -2,6 +2,7 @@
 #include "PngPixels.h"
 #include "general.h"
 #include <zlib.h>
+#include <stdio.h>
 
 U64 calcMaxIdatCompressedPixelsSize(U32 pixelsWidth, U32 pixelsHeight)
 {
@@ -202,4 +203,19 @@ U64 getRgb8bitPngEncodingSize(U8* pngEncoding)
   return Rgb8bitPngEncoding__SIZE(
     swapEndianU32(
       *atIdatCompressedPixelsSize(pngEncoding)));
+}
+
+void writePngFile(String pngFileAbsolutePath, U8* pngEncoding)
+{
+  FILE* pngFile_ptr =
+    fopen(
+      pngFileAbsolutePath,
+      "wb");
+  fwrite(
+    pngEncoding,
+    1,
+    getRgb8bitPngEncodingSize(pngEncoding),
+    pngFile_ptr);
+  fclose(
+    pngFile_ptr);
 }

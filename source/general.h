@@ -45,6 +45,8 @@ void printBytes(U8* startAddress, U64 byteCount);
 U32 swapEndianU32(U32 value);
 U64 swapEndianU64(U64 value);
 U32 fourByteStringToU32(String fourByteString);
+void removePathTrailingDelimiter(String pathResult, String pathSource);
+void resolveDirectoryChildPath(String childFilePathResult, String parentDirectoryAbsolutePath, String childName);
 
 #define JOIN_STRINGS(stringAaa, stringBbb) stringAaa ## stringBbb
 

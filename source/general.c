@@ -1,5 +1,6 @@
 #include "general.h"
 #include <stdio.h>
+#include <string.h>
 
 void printBytes(U8* startAddress, U64 byteCount)
 {
@@ -41,4 +42,29 @@ U32 fourByteStringToU32(String fourByteString)
     byteResult |= (U8)fourByteString[charIndex] << (BITS_PER_BYTE * ((inputStringLength - 1) - charIndex));
   }
   return byteResult;
+}
+
+void removePathTrailingDelimiter(String pathResult, String pathSource)
+{
+  U64 pathSourceLength =
+    strlen(pathSource);
+  pathSource[pathSourceLength - 1] == PATH_SEPARATOR
+    ? strncpy(
+        pathResult,
+        pathSource,
+        pathSourceLength - 1)
+    : strncpy(
+        pathResult,
+        pathSource,
+        pathSourceLength);
+}
+
+void resolveDirectoryChildPath(String childFilePathResult, String parentDirectoryAbsolutePath, String childName)
+{
+  sprintf(
+    childFilePathResult,
+    "%s%s%s",
+    parentDirectoryAbsolutePath,
+    "/",
+    childName);
 }

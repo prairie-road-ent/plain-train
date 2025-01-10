@@ -1,6 +1,11 @@
 #include "PlainTrain.h"
+#include <fcntl.h>
 #include <jansson.h>
+#include <libtcc.h>
 #include <string.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 U64 sizeofPlainTrainConfig(json_t* plainTrainConfigJson)
 {
@@ -65,4 +70,48 @@ void initPlainTrainConfig(PlainTrainConfig* plainTrainConfig, json_t* plainTrain
   }
   plainTrainConfig->renderGraphicPixelsLinkedLibraries.elementsCount =
     renderGraphicPixelsLinkedLibrariesCount;
+}
+
+RenderGraphicPixelsCallback compileRenderGraphicPixels(String renderGraphicPixelsFileAbsolutePath, PlainTrainConfig* projectConfig)
+{
+  int imageRenderPixelsFileDescriptor =
+    open(
+      renderGraphicPixelsFileAbsolutePath,
+      O_RDONLY);
+  struct stat imageRenderPixelsFileStat;
+  fstat(
+    imageRenderPixelsFileDescriptor,
+    &imageRenderPixelsFileStat);
+  String imageRenderPixelsSourceFileText =
+    (String)mmap(
+      NULL,
+      imageRenderPixelsFileStat.st_size,
+      PROT_READ,
+      MAP_PRIVATE,
+      imageRenderPixelsFileDescriptor,
+      0);
+  close(imageRenderPixelsFileDescriptor);
+  TCCState* tccState =
+    tcc_new();
+  tcc_set_output_type(
+    tccState,
+    TCC_OUTPUT_MEMORY);
+  tcc_compile_string(
+    tccState,
+    imageRenderPixelsSourceFileText);
+  tcc_add_library(
+    tccState,
+    "plain-train");
+  for (U64 linkedLibraryIndex = 0; linkedLibraryIndex < projectConfig->renderGraphicPixelsLinkedLibraries.elementsCount; linkedLibraryIndex++)
+  {
+    tcc_add_library(
+      tccState,
+      &projectConfig->renderGraphicPixelsLinkedLibraries.elements[linkedLibraryIndex]);
+  }
+  tcc_relocate(
+    tccState);
+  return (RenderGraphicPixelsCallback)
+    tcc_get_symbol(
+      tccState,
+      "renderGraphicPixels");
 }

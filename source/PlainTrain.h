@@ -26,5 +26,6 @@ typedef void (*RenderGraphicPixelsCallback)(Rgb8bitPngPixels*);
 
 U64 sizeofPlainTrainConfig(json_t* plainTrainConfigJson);
 void initPlainTrainConfig(PlainTrainConfig* plainTrainConfig, json_t* plainTrainConfigJson);
+RenderGraphicPixelsCallback compileRenderGraphicPixels(String renderGraphicPixelsFileAbsolutePath, PlainTrainConfig* projectConfig);
 
 #endif
