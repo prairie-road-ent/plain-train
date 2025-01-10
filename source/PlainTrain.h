@@ -1,5 +1,6 @@
 #ifndef PLAIN_TRAIN_H
 #define PLAIN_TRAIN_H
+#include "PngPixels.h"
 #include "general.h"
 #include <jansson.h>
 
@@ -20,6 +21,8 @@ typedef struct
   U32 graphicPixelsHeight;
   StringArray renderGraphicPixelsLinkedLibraries;
 } PlainTrainConfig;
+
+typedef void (*RenderGraphicPixelsCallback)(Rgb8bitPngPixels*);
 
 U64 sizeofPlainTrainConfig(json_t* plainTrainConfigJson);
 void initPlainTrainConfig(PlainTrainConfig* plainTrainConfig, json_t* plainTrainConfigJson);

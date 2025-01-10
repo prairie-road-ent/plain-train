@@ -1,6 +1,6 @@
 {
-    "graphicName": "foooooo",
+    "graphicName": "foo",
     "graphicPixelsWidth": 512,
     "graphicPixelsHeight": 512,
-    "renderGraphicPixelsLinkedLibraries": ["m","afsdfasd"]
+    "renderGraphicPixelsLinkedLibraries": ["m"]
 }

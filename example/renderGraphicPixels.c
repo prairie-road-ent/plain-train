@@ -1,10 +1,10 @@
 #include <plain-train.h>
 
-void renderGraphic(Rgb8bitPngPixels* pngPixels)
+void renderGraphicPixels(Rgb8bitPngPixels* pngPixels)
 {
   U8 backgroundColorRed = 255;
-  U8 backgroundColorGreen = 128;
-  U8 backgroundColorBlue = 0;
+  U8 backgroundColorGreen = 46;
+  U8 backgroundColorBlue = 91;
   Rgb8bitPixelChannels* currentPixelChannels_ptr;
   for (U32 pixelRowIndex = 0; pixelRowIndex < pngPixels->height; pixelRowIndex++)
   {

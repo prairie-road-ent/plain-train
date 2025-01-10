@@ -1,10 +1,17 @@
 #include "PlainTrain.h"
+#include "PngEncoding.h"
+#include "PngPixels.h"
 #include "general.h"
+#include <fcntl.h>
 #include <jansson.h>
+#include <libtcc.h>
 #include <limits.h>
 #include <linux/limits.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 void removePathTrailingDelimiter(String pathResult, String pathSource)
 {
@@ -64,17 +71,102 @@ int main(int argc, char* argv[])
   PlainTrainConfig* projectConfig =
     (PlainTrainConfig*)malloc(projectConfigSize);
   initPlainTrainConfig(
-    projectConfig, 
+    projectConfig,
     projectConfigJson);
   json_decref(projectConfigJson);
-  printf("%s\n", projectConfig->graphicName);
-  printf("%d\n", projectConfig->graphicPixelsWidth);
-  printf("%d\n", projectConfig->graphicPixelsHeight);
-  printf("%lu\n", projectConfig->renderGraphicPixelsLinkedLibraries.elementsCount);
+  int imageRenderPixelsFileDescriptor =
+    open(
+      renderGraphicPixelsFileAbsolutePath,
+      O_RDONLY);
+  struct stat imageRenderPixelsFileStat;
+  fstat(
+    imageRenderPixelsFileDescriptor,
+    &imageRenderPixelsFileStat);
+  String imageRenderPixelsSourceFileText =
+    (String)mmap(
+      NULL,
+      imageRenderPixelsFileStat.st_size,
+      PROT_READ,
+      MAP_PRIVATE,
+      imageRenderPixelsFileDescriptor,
+      0);
+  close(imageRenderPixelsFileDescriptor);
+  TCCState* tccState =
+    tcc_new();
+  tcc_set_output_type(
+    tccState,
+    TCC_OUTPUT_MEMORY);
+  tcc_compile_string(
+    tccState,
+    imageRenderPixelsSourceFileText);
+  tcc_add_library(
+    tccState,
+    "plain-train");
   for (U64 linkedLibraryIndex = 0; linkedLibraryIndex < projectConfig->renderGraphicPixelsLinkedLibraries.elementsCount; linkedLibraryIndex++)
   {
-    printf("%s\n", (String)&projectConfig->renderGraphicPixelsLinkedLibraries.elements[linkedLibraryIndex]);
+    tcc_add_library(
+      tccState,
+      &projectConfig->renderGraphicPixelsLinkedLibraries.elements[linkedLibraryIndex]);
   }
+  tcc_relocate(
+    tccState);
+  RenderGraphicPixelsCallback renderGraphicPixels =
+    (RenderGraphicPixelsCallback)tcc_get_symbol(
+      tccState,
+      "renderGraphicPixels");
+  U64 pixelsSize =
+    sizeofRgb8bitPngPixels(
+      projectConfig->graphicPixelsWidth,
+      projectConfig->graphicPixelsHeight);
+  U64 maxEncodingSize =
+    maxsizeofRgb8bitPngEncoding(
+      projectConfig->graphicPixelsWidth,
+      projectConfig->graphicPixelsHeight);
+  U64 poolSize =
+    pixelsSize + maxEncodingSize;
+  HeapAllocation pngPool =
+    (HeapAllocation)malloc(poolSize);
+  Rgb8bitPngPixels* pngPixels =
+    (Rgb8bitPngPixels*)pngPool;
+  HeapAllocation pngEncoding =
+    pngPool + pixelsSize;
+  initRgb8bitPngPixels(
+    pngPixels,
+    projectConfig->graphicPixelsWidth,
+    projectConfig->graphicPixelsHeight);
+  initRgb8bitPngEncoding(
+    pngEncoding,
+    pngPixels);
+  renderGraphicPixels(
+    pngPixels);
+  encodeRgb8bitPngPixels(
+    pngEncoding,
+    pngPixels);
+  mkdir(
+    projectOutputDirectoryAbsolutePath,
+    0755);
+  StringBuffer graphicOutputFilename[strlen(projectConfig->graphicName) + 4 + 1];
+  sprintf(
+    graphicOutputFilename,
+    "%s%s",
+    projectConfig->graphicName,
+    ".png");
+  StringBuffer graphicOutputAbsolutePath[PATH_MAX];
+  resolveDirectoryChildPath(
+    graphicOutputAbsolutePath,
+    projectOutputDirectoryAbsolutePath,
+    graphicOutputFilename);
+  FILE* pngFile_ptr =
+    fopen(
+      graphicOutputAbsolutePath,
+      "wb");
+  fwrite(
+    pngEncoding,
+    1,
+    getRgb8bitPngEncodingSize(pngEncoding),
+    pngFile_ptr);
+  fclose(pngFile_ptr);
+  free(pngPool);
   return 0;
 }
 
