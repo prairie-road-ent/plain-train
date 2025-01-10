@@ -1,6 +1,7 @@
 #ifndef PLAIN_TRAIN_H
 #define PLAIN_TRAIN_H
 #include "general.h"
+#include <jansson.h>
 
 #define projectConfigFileName__PlainTrain__VALUE "plain-train.json"
 #define projectOutputDirectoryName__PlainTrain__VALUE "output"
@@ -19,5 +20,8 @@ typedef struct
   U32 graphicPixelsHeight;
   StringArray renderGraphicPixelsLinkedLibraries;
 } PlainTrainConfig;
+
+U64 sizeofPlainTrainConfig(json_t* plainTrainConfigJson);
+void initPlainTrainConfig(PlainTrainConfig* plainTrainConfig, json_t* plainTrainConfigJson);
 
 #endif

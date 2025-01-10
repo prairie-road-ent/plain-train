@@ -31,80 +31,6 @@ void resolveDirectoryChildPath(String childFilePathResult, String parentDirector
     childName);
 }
 
-// void loadProjectConfig(PlainTrainConfig* projectConfigResult, String projectConfigFileAbsolutePath)
-// {
-//   json_t* projectConfigJson =
-//     json_load_file(
-//       projectConfigFileAbsolutePath,
-//       0,
-//       NULL);
-//   String graphicNameReference =
-//     (String)json_string_value(
-//       json_object_get(
-//         projectConfigJson,
-//         "graphicName"));
-//   U32 graphicPixelsWidthValue =
-//     (U32)json_number_value(
-//       json_object_get(
-//         projectConfigJson,
-//         "graphicPixelsWidth"));
-//   U32 graphicPixelsHeightValue =
-//     (U32)json_number_value(
-//       json_object_get(
-//         projectConfigJson,
-//         "graphicPixelsHeight"));
-//   json_t* renderGraphicPixelsLinkedLibrariesJsonReference =
-//     json_object_get(
-//       projectConfigJson,
-//       "renderGraphicPixelsLinkedLibraries");
-//   U64 graphicNameStringSize =
-//     strlen(graphicNameReference) + 1;
-//   U64 renderGraphicPixelsLinkedLibrariesSize = 0;
-//   U64 renderGraphicPixelsLinkedLibrariesCount = 0;
-//   size_t linkedLibraryIndex;
-//   json_t* linkedLibraryLinkLabel;
-//   json_array_foreach(renderGraphicPixelsLinkedLibrariesJsonReference, linkedLibraryIndex, linkedLibraryLinkLabel)
-//   {
-//     renderGraphicPixelsLinkedLibrariesSize =
-//       renderGraphicPixelsLinkedLibrariesSize + sizeof(String) + strlen((String)json_string_value(linkedLibraryLinkLabel)) + 1;
-//     renderGraphicPixelsLinkedLibrariesCount =
-//       renderGraphicPixelsLinkedLibrariesCount + 1;
-//   }
-//   projectConfigResult =
-//     (PlainTrainConfig*)malloc(
-//       sizeof(PlainTrainConfig) + graphicNameStringSize + renderGraphicPixelsLinkedLibrariesSize);
-//   projectConfigResult->graphicName =
-//     (String)((U8*)projectConfigResult + sizeof(PlainTrainConfig));
-//   strncpy(
-//     projectConfigResult->graphicName,
-//     graphicNameReference,
-//     strlen(graphicNameReference));
-//   projectConfigResult->graphicPixelsWidth =
-//     graphicPixelsWidthValue;
-//   projectConfigResult->graphicPixelsHeight =
-//     graphicPixelsHeightValue;
-//   projectConfigResult->renderGraphicPixelsLinkedLibraries.elementsCount =
-//     renderGraphicPixelsLinkedLibrariesCount;
-//   projectConfigResult->renderGraphicPixelsLinkedLibraries.elements =
-//     (String*)((U8*)projectConfigResult + sizeof(PlainTrainConfig) + graphicNameStringSize);
-//   json_array_foreach(renderGraphicPixelsLinkedLibrariesJsonReference, linkedLibraryIndex, linkedLibraryLinkLabel)
-//   {
-//     // strncpy(
-//     //   projectConfigResult->renderGraphicPixelsLinkedLibraries.elements[linkedLibraryIndex],
-//     //   json_string_value(linkedLibraryLinkLabel),
-//     //   strlen(json_string_value(linkedLibraryLinkLabel)));
-//   }
-//   json_decref(projectConfigJson);
-//   printf("%s\n", (String)((U8*)projectConfigResult + sizeof(PlainTrainConfig) + graphicNameStringSize));
-//   printf("%d\n", projectConfigResult->graphicPixelsWidth);
-//   printf("%d\n", projectConfigResult->graphicPixelsHeight);
-//   printf("%d\n", projectConfigResult->renderGraphicPixelsLinkedLibraries.elementsCount);
-//   // for (U64 foo = 0; foo < projectConfigResult->renderGraphicPixelsLinkedLibraries.elementsCount; foo++)
-//   // {
-//   //   printf("%s\n", projectConfigResult->renderGraphicPixelsLinkedLibraries.elements[foo]);
-//   // }
-// }
-
 int main(int argc, char* argv[])
 {
   String projectDirectoryAbsolutePathArgument = argv[1];
@@ -127,14 +53,28 @@ int main(int argc, char* argv[])
     renderGraphicPixelsFileAbsolutePath,
     projectDirectoryAbsolutePath,
     renderGraphicPixelsFileName__PlainTrain__VALUE);
-  printf("%s\n", projectConfigFileAbsolutePath);
-  printf("%s\n", projectOutputDirectoryAbsolutePath);
-  printf("%s\n", renderGraphicPixelsFileAbsolutePath);
-  // PlainTrainConfig* projectConfig;
-  // loadProjectConfig(
-  //   projectConfig,
-  //   projectConfigFileAbsolutePath);
-  // free(projectConfig);
+  json_t* projectConfigJson =
+    json_load_file(
+      projectConfigFileAbsolutePath,
+      0,
+      NULL);
+  U64 projectConfigSize =
+    sizeofPlainTrainConfig(
+      projectConfigJson);
+  PlainTrainConfig* projectConfig =
+    (PlainTrainConfig*)malloc(projectConfigSize);
+  initPlainTrainConfig(
+    projectConfig, 
+    projectConfigJson);
+  json_decref(projectConfigJson);
+  printf("%s\n", projectConfig->graphicName);
+  printf("%d\n", projectConfig->graphicPixelsWidth);
+  printf("%d\n", projectConfig->graphicPixelsHeight);
+  printf("%lu\n", projectConfig->renderGraphicPixelsLinkedLibraries.elementsCount);
+  for (U64 linkedLibraryIndex = 0; linkedLibraryIndex < projectConfig->renderGraphicPixelsLinkedLibraries.elementsCount; linkedLibraryIndex++)
+  {
+    printf("%s\n", (String)&projectConfig->renderGraphicPixelsLinkedLibraries.elements[linkedLibraryIndex]);
+  }
   return 0;
 }
 
