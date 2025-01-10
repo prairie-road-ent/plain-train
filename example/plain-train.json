@@ -1,0 +1,6 @@
+{
+    "graphicName": "foo",
+    "graphicPixelsWidth": 4096,
+    "graphicPixelsHeight": 4096,
+    "renderGraphicPixelsLinkedLibraries": ["m"]
+}
