@@ -80,6 +80,11 @@ int main(int argc, char* argv[])
     // that graphic can be updated. a call to read will block until
     // event processed, and there is only one kind of event being
     // monitored for (modification of renderGraphicPixels.c)
+    // NOTE: when running from codespaces, events seem to be double emitted
+    // which isnt much of a problem when rendering a single image
+    // but when we render a bunch of frames for a video
+    // that will have to be handled more elegantly by
+    // double reading or something
     read(
       inotifyDescriptor,
       inotifyEventBuffer,
