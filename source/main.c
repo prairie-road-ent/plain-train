@@ -1,9 +1,17 @@
 #include "PlainTrain.h"
 #include "general.h"
+#include <general.h>
 #include <jansson.h>
 #include <limits.h>
 #include <string.h>
+#include <sys/inotify.h>
 #include <sys/stat.h>
+#include <unistd.h>
+#include <signal.h>
+
+#define INOTIFY_EVENT_SIZE (sizeof(struct inotify_event))
+#define INOTIFY_EVENT_BUFFER_EVENT_CAPACITY 4
+#define INOTIFY_EVENT_BUFFER_SIZE (INOTIFY_EVENT_BUFFER_EVENT_CAPACITY * INOTIFY_EVENT_SIZE)
 
 int main(int argc, char* argv[])
 {
@@ -55,6 +63,40 @@ int main(int argc, char* argv[])
     graphicOutputAbsolutePath,
     projectOutputDirectoryAbsolutePath,
     graphicOutputFilename);
+  int inotifyDescriptor =
+    inotify_init();
+  inotify_add_watch(
+    inotifyDescriptor,
+    renderGraphicPixelsFileAbsolutePath,
+    IN_MODIFY);
+  U8 inotifyEventBuffer[INOTIFY_EVENT_BUFFER_SIZE];
+  Bool originalProcessIsMonitoring =
+    true__Bool__STATIC_VALUE;
+  pid_t childProcessId;
+  while (originalProcessIsMonitoring)
+  {
+    // dont really care how many bytes were read or
+    // processing latest vs oldest. just want signal
+    // that graphic can be updated. a call to read will block until
+    // event processed, and there is only one kind of event being
+    // monitored for (modification of renderGraphicPixels.c)
+    read(
+      inotifyDescriptor,
+      inotifyEventBuffer,
+      INOTIFY_EVENT_BUFFER_SIZE);
+    printf("UPDATED: renderGraphicPixels.c\n");
+    if (childProcessId > 0) {
+      kill(
+        childProcessId, 
+        SIGKILL);
+    }  
+    childProcessId =
+      fork();
+    if (childProcessId == 0)
+    {
+      break;
+    }
+  }
   updateGraphicImage(
     renderGraphicPixelsFileAbsolutePath,
     projectConfig,
