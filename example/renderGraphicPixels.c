@@ -3,7 +3,7 @@
 void renderGraphicPixels(Rgb8bitPngPixels* pngPixels)
 {
   U8 backgroundColorRed = 211;
-  U8 backgroundColorGreen = 211;
+  U8 backgroundColorGreen = 71;
   U8 backgroundColorBlue = 45;
   Rgb8bitPixelChannels* currentPixelChannels_ptr;
   for (U32 pixelRowIndex = 0; pixelRowIndex < pngPixels->height; pixelRowIndex++)
