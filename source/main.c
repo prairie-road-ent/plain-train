@@ -1,13 +1,14 @@
 #include "PlainTrain.h"
+#include "PngEncoding.h"
 #include "general.h"
 #include <general.h>
 #include <jansson.h>
 #include <limits.h>
+#include <signal.h>
 #include <string.h>
 #include <sys/inotify.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <signal.h>
 
 #define INOTIFY_EVENT_SIZE (sizeof(struct inotify_event))
 #define INOTIFY_EVENT_BUFFER_EVENT_CAPACITY 4
@@ -52,6 +53,26 @@ int main(int argc, char* argv[])
     projectConfig,
     projectConfigJson);
   json_decref(projectConfigJson);
+  U64 pixelsSize =
+    sizeofRgb8bitPngPixels(
+      projectConfig->graphicPixelsWidth,
+      projectConfig->graphicPixelsHeight);
+  U64 maxEncodingSize =
+    maxsizeofRgb8bitPngEncoding(
+      projectConfig->graphicPixelsWidth,
+      projectConfig->graphicPixelsHeight);
+  U64 poolSize =
+    pixelsSize + maxEncodingSize;
+  HeapAllocation pngPool =
+    (HeapAllocation)malloc(poolSize);
+  Rgb8bitPngPixels* pngPixels =
+    (Rgb8bitPngPixels*)pngPool;
+  HeapAllocation pngEncoding =
+    pngPool + pixelsSize;
+  initRgb8bitPngPixels(
+    pngPixels,
+    projectConfig->graphicPixelsWidth,
+    projectConfig->graphicPixelsHeight);
   StringBuffer graphicOutputFilename[strlen(projectConfig->graphicName) + strlen(".png") + 1];
   sprintf(
     graphicOutputFilename,
@@ -90,21 +111,27 @@ int main(int argc, char* argv[])
       inotifyEventBuffer,
       INOTIFY_EVENT_BUFFER_SIZE);
     printf("UPDATED: renderGraphicPixels.c\n");
-    if (childProcessId > 0) {
+    if (childProcessId > 0)
+    {
       kill(
-        childProcessId, 
+        childProcessId,
         SIGKILL);
-    }  
+    }
     childProcessId =
       fork();
     if (childProcessId == 0)
     {
+      updateGraphicImage(
+        renderGraphicPixelsFileAbsolutePath,
+        projectConfig,
+        pngPixels,
+        pngEncoding,
+        graphicOutputAbsolutePath);
       break;
     }
   }
-  updateGraphicImage(
-    renderGraphicPixelsFileAbsolutePath,
-    projectConfig,
-    graphicOutputAbsolutePath);
+  // not sure if parent process really needs to cleanup
+  // free(pngPool);
+  // close(inotifyDescriptor);
   return 0;
 }

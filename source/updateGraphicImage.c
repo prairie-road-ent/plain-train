@@ -3,32 +3,12 @@
 #include "PngPixels.h"
 #include "general.h"
 
-void updateGraphicImage(String renderGraphicPixelsFileAbsolutePath, PlainTrainConfig* projectConfig, String graphicOutputAbsolutePath)
+void updateGraphicImage(String renderGraphicPixelsFileAbsolutePath, PlainTrainConfig* projectConfig, Rgb8bitPngPixels* pngPixels, U8* pngEncoding, String graphicOutputAbsolutePath)
 {
   RenderGraphicPixelsCallback renderGraphicPixels =
     compileRenderGraphicPixels(
       renderGraphicPixelsFileAbsolutePath,
       projectConfig);
-  U64 pixelsSize =
-    sizeofRgb8bitPngPixels(
-      projectConfig->graphicPixelsWidth,
-      projectConfig->graphicPixelsHeight);
-  U64 maxEncodingSize =
-    maxsizeofRgb8bitPngEncoding(
-      projectConfig->graphicPixelsWidth,
-      projectConfig->graphicPixelsHeight);
-  U64 poolSize =
-    pixelsSize + maxEncodingSize;
-  HeapAllocation pngPool =
-    (HeapAllocation)malloc(poolSize);
-  Rgb8bitPngPixels* pngPixels =
-    (Rgb8bitPngPixels*)pngPool;
-  HeapAllocation pngEncoding =
-    pngPool + pixelsSize;
-  initRgb8bitPngPixels(
-    pngPixels,
-    projectConfig->graphicPixelsWidth,
-    projectConfig->graphicPixelsHeight);
   initRgb8bitPngEncoding(
     pngEncoding,
     pngPixels);
@@ -40,5 +20,4 @@ void updateGraphicImage(String renderGraphicPixelsFileAbsolutePath, PlainTrainCo
   writePngFile(
     graphicOutputAbsolutePath,
     pngEncoding);
-  free(pngPool);
 }
