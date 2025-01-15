@@ -1,21 +1,46 @@
 #include "PlainTrain.h"
 #include "PngEncoding.h"
+#include "PngPixels.h"
 #include "general.h"
+#include <fcntl.h>
 #include <general.h>
 #include <jansson.h>
 #include <limits.h>
 #include <signal.h>
 #include <string.h>
 #include <sys/inotify.h>
+#include <sys/shm.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
+typedef struct
+{
+  U32 frameIndex;
+  pid_t frameProcessId;
+  Rgb8bitPngPixels* framePixels;
+  U8* frameEncoding;
+} FrameRendererProcess;
+
+typedef struct
+{
+  pid_t graphicProcessId;
+  pid_t graphicProcessGroupId;
+  U32 graphicFrameRendererCount;
+  FrameRendererProcess* graphicFrameRenderers;
+} GraphicRendererProcess;
 
 #define INOTIFY_EVENT_SIZE (sizeof(struct inotify_event))
 #define INOTIFY_EVENT_BUFFER_EVENT_CAPACITY 4
 #define INOTIFY_EVENT_BUFFER_SIZE (INOTIFY_EVENT_BUFFER_EVENT_CAPACITY * INOTIFY_EVENT_SIZE)
 
+void killGraphicFrameRenderers()
+{
+  printf("todo\n");
+}
+
 int main(int argc, char* argv[])
 {
+    signal(SIGINT, killGraphicFrameRenderers);
   String projectDirectoryAbsolutePathArgument = argv[1];
   StringBuffer projectDirectoryAbsolutePath[PATH_MAX];
   removePathTrailingDelimiter(
@@ -61,18 +86,57 @@ int main(int argc, char* argv[])
     maxsizeofRgb8bitPngEncoding(
       projectConfig->graphicPixelsWidth,
       projectConfig->graphicPixelsHeight);
-  U64 poolSize =
-    pixelsSize + maxEncodingSize;
+  U32 systemCoreCount =
+    sysconf(_SC_NPROCESSORS_ONLN);
+  U32 frameRendererCount =
+    systemCoreCount;
+  U64 pixelsPoolSize =
+    systemCoreCount * pixelsSize;
+  U64 encodingPoolSize =
+    systemCoreCount * maxEncodingSize;
+  U64 rendererPoolSize =
+    sizeof(GraphicRendererProcess) + frameRendererCount * sizeof(FrameRendererProcess);
+  U64 pngPoolSize =
+    pixelsPoolSize + encodingPoolSize + rendererPoolSize;
+  int poolSharedMemoryKey = 1234;
+  int poolSharedMemoryId =
+    shmget(
+      poolSharedMemoryKey,
+      pngPoolSize,
+      0666 | IPC_CREAT);
   HeapAllocation pngPool =
-    (HeapAllocation)malloc(poolSize);
-  Rgb8bitPngPixels* pngPixels =
-    (Rgb8bitPngPixels*)pngPool;
-  HeapAllocation pngEncoding =
-    pngPool + pixelsSize;
-  initRgb8bitPngPixels(
-    pngPixels,
-    projectConfig->graphicPixelsWidth,
-    projectConfig->graphicPixelsHeight);
+    shmat(
+      poolSharedMemoryId,
+      NULL,
+      0);
+  // (HeapAllocation)malloc(pngPoolSize);
+  HeapAllocation pixelsPool =
+    pngPool;
+  HeapAllocation encodingPool =
+    pngPool + pixelsPoolSize;
+  GraphicRendererProcess* graphicRendererProcess =
+    (GraphicRendererProcess*)(encodingPool + encodingPoolSize);
+  graphicRendererProcess->graphicProcessId =
+    -1;
+  graphicRendererProcess->graphicProcessGroupId =
+    -1;
+  graphicRendererProcess->graphicFrameRendererCount =
+    frameRendererCount;
+  graphicRendererProcess->graphicFrameRenderers =
+    (FrameRendererProcess*)((U8*)graphicRendererProcess + sizeof(GraphicRendererProcess));
+  for (U16 rendererIndex = 0; rendererIndex < graphicRendererProcess->graphicFrameRendererCount; rendererIndex++)
+  {
+    FrameRendererProcess* currentFrameRenderer =
+      graphicRendererProcess->graphicFrameRenderers + rendererIndex;
+    currentFrameRenderer->framePixels =
+      (Rgb8bitPngPixels*)(pixelsPool + (pixelsSize * rendererIndex));
+    currentFrameRenderer->frameEncoding =
+      (U8*)(encodingPool + (maxEncodingSize * rendererIndex));
+    initRgb8bitPngPixels(
+      currentFrameRenderer->framePixels,
+      projectConfig->graphicPixelsWidth,
+      projectConfig->graphicPixelsHeight);
+  }
   StringBuffer graphicOutputFilename[strlen(projectConfig->graphicName) + strlen(".png") + 1];
   sprintf(
     graphicOutputFilename,
@@ -86,16 +150,31 @@ int main(int argc, char* argv[])
     graphicOutputFilename);
   int inotifyDescriptor =
     inotify_init();
+  int inotifyFlags =
+    fcntl(
+      inotifyDescriptor,
+      F_GETFL,
+      0);
+  fcntl(
+    inotifyDescriptor,
+    F_SETFL,
+    inotifyFlags | O_NONBLOCK);
   inotify_add_watch(
     inotifyDescriptor,
     renderGraphicPixelsFileAbsolutePath,
     IN_MODIFY);
   U8 inotifyEventBuffer[INOTIFY_EVENT_BUFFER_SIZE];
-  Bool originalProcessIsMonitoring =
-    true__Bool__STATIC_VALUE;
-  pid_t childProcessId;
-  while (originalProcessIsMonitoring)
+  pid_t forkProcessIdResult = -1;
+  while (true__Bool__STATIC_VALUE)
   {
+    if (forkProcessIdResult > 0 && graphicRendererProcess->graphicProcessId > 0 && graphicRendererProcess->graphicProcessId != graphicRendererProcess->graphicProcessGroupId)
+    {
+      continue;
+    }
+    else if (forkProcessIdResult > 0 && graphicRendererProcess->graphicProcessId == -1)
+    {
+      continue;
+    }
     // dont really care how many bytes were read or
     // processing latest vs oldest. just want signal
     // that graphic can be updated. a call to read will block until
@@ -106,28 +185,47 @@ int main(int argc, char* argv[])
     // but when we render a bunch of frames for a video
     // that will have to be handled more elegantly by
     // double reading or something
-    read(
-      inotifyDescriptor,
-      inotifyEventBuffer,
-      INOTIFY_EVENT_BUFFER_SIZE);
-    printf("UPDATED: renderGraphicPixels.c\n");
-    if (childProcessId > 0)
+    int inotifyEventBytesRead =
+      read(
+        inotifyDescriptor,
+        inotifyEventBuffer,
+        INOTIFY_EVENT_BUFFER_SIZE);
+    printf("%d\n", graphicRendererProcess->graphicProcessId);
+    if (inotifyEventBytesRead > 0 && graphicRendererProcess->graphicProcessId == -1)
     {
-      kill(
-        childProcessId,
-        SIGKILL);
+      printf("initial fork\n");
+      forkProcessIdResult =
+        fork();
     }
-    childProcessId =
-      fork();
-    if (childProcessId == 0)
+    else if (inotifyEventBytesRead > 0 && graphicRendererProcess->graphicProcessId > 0 && graphicRendererProcess->graphicProcessId == graphicRendererProcess->graphicProcessGroupId)
     {
-      updateGraphicImage(
-        renderGraphicPixelsFileAbsolutePath,
-        projectConfig,
-        pngPixels,
-        pngEncoding,
-        graphicOutputAbsolutePath);
+      printf("secondary fork\n");
+      kill(
+        -graphicRendererProcess->graphicProcessGroupId,
+        SIGKILL);
+      forkProcessIdResult =
+        fork();
+    }
+
+    if (forkProcessIdResult == 0)
+    {
       break;
+    }
+    usleep(1000000);
+  }
+  if (forkProcessIdResult == 0)
+  {
+    graphicRendererProcess->graphicProcessId =
+      getpid();
+    setpgid(
+      graphicRendererProcess->graphicProcessId,
+      graphicRendererProcess->graphicProcessId);
+    graphicRendererProcess->graphicProcessGroupId =
+      graphicRendererProcess->graphicProcessId;
+    while (1)
+    {
+      printf("%d\n", graphicRendererProcess->graphicProcessId);
+      usleep(1000000);
     }
   }
   // not sure if parent process really needs to cleanup

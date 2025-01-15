@@ -1,5 +1,6 @@
 #include "PngPixels.h"
 #include "PngEncoding.h"
+#include <stdalign.h>
 
 U64 calcPixelsDataRowSize(U32 pixelsWidth)
 {
@@ -15,7 +16,13 @@ U64 calcPixelsDataSize(U32 pixelsWidth, U32 pixelsHeight)
 
 U64 sizeofRgb8bitPngPixels(U32 pixelsWidth, U32 pixelsHeight)
 {
-  return sizeof(Rgb8bitPngPixels) + calcPixelsDataSize(pixelsWidth, pixelsHeight); // + padding
+  U64 isolatedSize =
+    sizeof(Rgb8bitPngPixels) + calcPixelsDataSize(pixelsWidth, pixelsHeight);
+  U64 structureRequiredStartAlignmentSize =
+    alignof(Rgb8bitPngPixels);
+  U64 paddingAdjustedSize =
+    isolatedSize + (structureRequiredStartAlignmentSize - (isolatedSize % structureRequiredStartAlignmentSize));
+  return paddingAdjustedSize;
 }
 
 void initRgb8bitPngPixels(Rgb8bitPngPixels* pngPixels, U32 pixelsWidth, U32 pixelsHeight)
