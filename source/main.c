@@ -2,6 +2,7 @@
 #include "PngEncoding.h"
 #include "PngPixels.h"
 #include "general.h"
+#include <errno.h>
 #include <fcntl.h>
 #include <general.h>
 #include <jansson.h>
@@ -12,6 +13,7 @@
 #include <sys/shm.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <sys/wait.h>
 
 typedef struct
 {
@@ -33,14 +35,17 @@ typedef struct
 #define INOTIFY_EVENT_BUFFER_EVENT_CAPACITY 4
 #define INOTIFY_EVENT_BUFFER_SIZE (INOTIFY_EVENT_BUFFER_EVENT_CAPACITY * INOTIFY_EVENT_SIZE)
 
-void killGraphicFrameRenderers()
+GraphicRendererProcess* graphicRendererProcess;
+
+void closeProgram()
 {
-  printf("todo\n");
+  kill(-graphicRendererProcess->graphicProcessGroupId, SIGKILL);
+  kill(getpid(), SIGKILL);
 }
 
 int main(int argc, char* argv[])
 {
-    signal(SIGINT, killGraphicFrameRenderers);
+  signal(SIGINT, closeProgram);
   String projectDirectoryAbsolutePathArgument = argv[1];
   StringBuffer projectDirectoryAbsolutePath[PATH_MAX];
   removePathTrailingDelimiter(
@@ -114,8 +119,10 @@ int main(int argc, char* argv[])
     pngPool;
   HeapAllocation encodingPool =
     pngPool + pixelsPoolSize;
-  GraphicRendererProcess* graphicRendererProcess =
+  graphicRendererProcess =
     (GraphicRendererProcess*)(encodingPool + encodingPoolSize);
+  // GraphicRendererProcess* graphicRendererProcess =
+  //   (GraphicRendererProcess*)(encodingPool + encodingPoolSize);
   graphicRendererProcess->graphicProcessId =
     -1;
   graphicRendererProcess->graphicProcessGroupId =
@@ -203,6 +210,8 @@ int main(int argc, char* argv[])
       kill(
         -graphicRendererProcess->graphicProcessGroupId,
         SIGKILL);
+    int status;
+        waitpid(-graphicRendererProcess->graphicProcessGroupId, &status, 0);  // Col
       forkProcessIdResult =
         fork();
     }
@@ -211,7 +220,7 @@ int main(int argc, char* argv[])
     {
       break;
     }
-    usleep(1000000);
+    usleep(100000);
   }
   if (forkProcessIdResult == 0)
   {
